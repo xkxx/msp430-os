@@ -1,48 +1,90 @@
-#include "msp430.h"
+#ifndef PC
+	#include "msp430.h"
+#else
+	#include <stdio.h>
+#endif
 #include "std.h"
 
 unsigned char flags = 0;
 
-usize_t nexttoklen(const char* const str, char key, usize_t size) {
-    usize_t i;
-	for(i = 0; i < size && str[i] != '\0'; i++) {
-		if(str[i] == key) {
-            break;
-		}
-	}
-    return i;
+// String functions
+
+/**
+ * Split a string into tokens
+ * @param str        string to process (.size may be mutated)
+ *
+ * @param delimiter  token delimiter
+ * @param result     tokenizer output
+ *                   == `str` if no `delimiter` is found
+ *
+ * This function is unpure. `str.size` will be changed.
+ * Use a copy of the original string if such is a problem
+ */
+
+void tokenize(String* str, char delimiter, String* result) {
+    usize_t i = 0;
+
+    // `result` always begins at start of `str`
+    result->str = str->str;
+
+    for (i = 0; i < str->size; i++) {
+        if(str->str[i] == delimiter) {
+            // set `result` to end before the delimiter
+            result->size = i;
+            // set input `str` to begin after delimiter
+            // we don't care if it's out of bound since
+            // .size == 0 in that case
+            str->str += i + 1;
+            str->size -= i + 1;
+            return;
+        }
+    }
+
+    // default case
+    // if no delimiter is found, `result` == `str` and `str` == ""
+    result->size = str->size;
+    str->size = 0;
 }
 
-// s1 must be '\0' terminated, while s2 may not
-// size = len(s2)
-usize_t streq(const char* const s1, const String* const s2) {
+/**
+  check if two strings are equal
+  @param s1  a string to compare
+  @param s2  a string to compare against
+  @return 1  if s1 == s2
+          0  otherwise
+ */
+
+usize_t streq(const String* s1, const String* s2) {
 	usize_t i;
-    for(i = 0; i < s2->size; i++) {
-        if(s1[i] != s2->str[i]) {
+	if (s1->size != s2->size) {
+        return 0;
+	}
+    for(i = 0; i < s2->size && i < s1->size; i++) {
+        if(s1->str[i] != s2->str[i]) {
 			return 0;
 		}
-	}
-	if (s1[i] != '\0') {
-		return 0;
 	}
 	return 1;
 }
 
+// Standard IO
+
+#ifndef PC
+
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void) {
 	if (UCA0RXBUF == '\r') {
-		put("\r\n", 2);
-		uart_buffer[uart_index] = '\0';
+		putraw("\r\n", 2);
 		setHasLine;
 		if (needLine) {
 			clearNeedLine;
 			exitSleep();
 		}
 	}
-	else if (UCA0RXBUF == '\b' || (UCA0RXBUF == '\x7F')) {
+	else if (UCA0RXBUF == '\b' || UCA0RXBUF == '\x7F') {
 		if (uart_index > 0) {
 		  uart_index--;
-		  put("\b \b", 3);
+		  putraw("\b \b", 3);
 		}
 	}
 	else if (uart_index < BUFFER_SIZE || !hasLine) {
@@ -51,7 +93,7 @@ __interrupt void USCI0RX_ISR(void) {
 			clearNeedChar;
 			exitSleep();
 		}
-		put(&UCA0RXBUF, 1);
+		putraw(&UCA0RXBUF, 1);
 	}
 //	put("uart_index: [", 8);
 //	printNum(uart_index);
@@ -61,17 +103,14 @@ __interrupt void USCI0RX_ISR(void) {
 //	put("]\r\n", 3);
 }
 
-void put(const char *TxArray, usize_t ArrayLength){
+#endif
 
-	// Send number of bytes Specified in ArrayLength in the array at using the hardware UART 0
-	// Example usage: UARTSendArray("Hello", 5);
-	// int data[2]={1023, 235};
-	// UARTSendArray(data, 4); // Note because the UART transmits bytes it is necessary to send two bytes for each integer hence the data length is twice the array length
+void putraw(const char *str, usize_t len) {
 
-	while(ArrayLength-- && *TxArray != '\0'){ // Loop until StringLength == 0 and post decrement
+	while(len--) { // Loop until StringLength == 0 and post decrement
 		while(!(IFG2 & UCA0TXIFG)); // Wait for TX buffer to be ready for new data
-			UCA0TXBUF = *TxArray; //Write the character at the location specified by the pointer
-			TxArray++; //Increment the TxString pointer to point to the next character
+			UCA0TXBUF = *str; //Write the character at the location specified by the pointer
+			str++; //Increment the TxString pointer to point to the next character
 	}
 }
 
@@ -94,6 +133,13 @@ static void unshift() {
 	uart_index--;
 }
 
+/**
+ * Get the next character from input
+ *
+ * @return the next input character
+ *
+ * If there's nothing in buffer, blocks until input is received
+ */
 char getchar() {
 	if (uart_index == 0) {
 		setNeedChar;
@@ -103,6 +149,8 @@ char getchar() {
 	unshift();
 	return result;
 }
+
+// Timers
 
 void sleep(unsigned int cycles) {
 	TACCR0 = cycles;
@@ -116,23 +164,24 @@ __interrupt void Timer_A (void) {
 	exitSleep();
 }
 
+// Debug
 
 void printNum(int x) {
 	static const char * const nums = "0123456789";
 	while (x >= 10) {
 		int y = x % 10;
-		put(nums + y, 1);
+		putraw(nums + y, 1);
 		x /= 10;
 	}
-	put(nums + x, 1);
+	putraw(nums + x, 1);
 }
 
 void printCharCode(char x) {
 	static const char * const nums = "0123456789";
 	while (x >= 10) {
 		char y = x % 10;
-		put(nums + y, 1);
+		putraw(nums + y, 1);
 		x /= 10;
 	}
-	put(nums + x, 1);
+	putraw(nums + x, 1);
 }

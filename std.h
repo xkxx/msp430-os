@@ -10,7 +10,11 @@
 
 #define NULL 0
 
+// Buffer size for Standard IO
+
 #define BUFFER_SIZE 20
+
+// IO/Timer flags
 
 extern unsigned char flags;
 
@@ -32,27 +36,55 @@ extern unsigned char flags;
 #define enterSleep() setAsleep; __bis_SR_register(LPM3_bits + GIE) // Enter LPM0, interrupts enabled
 #define exitSleep() clearAsleep; LPM3_EXIT
 
+// Type for calculating sizes
 typedef unsigned short usize_t;
+
+/**
+ * A overflow-safe mutable string type
+ *
+ * @var str   a char array that contains the content of the string
+ *            does not have to be '\0' terminated
+ *            is indeterminable if .size == 0 (can be anything)
+ * @var size  the size of the string, excluding possible '\0'
+ *            .size must be 0 in case the string is empty
+ */
 
 typedef struct String {
     char* str;
     usize_t size;
 } String;
 
-#define newString(str, size) {str, size}
-#define putstr(string) put((string).str, (string).size)
+/// create a new string
+#define newstr(str, size) {str, size}
 
+// String functions
+
+void tokenize(String* str, char delimiter, String* result);
+usize_t streq(const String* s1, const String* s2);
+
+// Standard IO
+
+// UART buffer
 static volatile char uart_buffer[BUFFER_SIZE];
+// UART buffer cursor
 static volatile usize_t uart_index = 0;
 
-usize_t nexttoklen(const char* const str, char key, usize_t size);
-usize_t streq(const char* const s1, const String* const s2);
+// Output functions
 
-void put(const char *TxArray, usize_t ArrayLength);
+// For internal use only
+void putraw(const char *str, usize_t len);
+
+#define put(string) putraw((string).str, (string).size)
+
+// Input functions
 void get(String* in);
-char getchar_();
 
+char getchar();
 
+// Timer functions
+void sleep(unsigned int cycles);
+
+// Debug
 void printNum(int x);
 void printCharCode(char x);
 

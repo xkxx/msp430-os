@@ -1,11 +1,15 @@
 #include "fs.h"
 
+// Include built-in executables and import `LAST_COMMMAND`
 #include "bin.c"
 
+// Base ROOTFS definition
+
+/// Executables
 const Dir bin = {
 	.base = {
 		.type = t_DIR,
-		.name = "bin",
+		.name = {"bin", 3},
 		.sibling = NULL
 	},
 	.content = LAST_COMMAND,
@@ -14,101 +18,134 @@ const Dir bin = {
 const Text hello = {
 	.base = {
 		.type = t_TEXT,
-		.name = "hello",
+		.name = {"hello", 5},
 		.sibling = NULL
 	},
 	.content = "Hello World!",
 };
 
+/// User personal files
 const Dir home = {
 	.base = {
 		.type = t_DIR,
-		.name = "home",
+		.name = {"home", 4},
 		.sibling = (File*) &bin
 	},
 	.content = (File*) &hello
 };
 
+/// Moar Executables
 const Link usr_bin = {
 	.base = {
 		.type = t_LINK,
-		.name = "bin",
+		.name = {"bin", 3},
 		.sibling = NULL
 	},
     .content = (File*) &bin
 };
 
+/// Moar user files
 const Link usr_share = {
 	.base = {
 		.type = t_LINK,
-		.name = "share",
+		.name = {"share", 5},
         .sibling = (File*) &usr_bin
 	},
     .content = (File*) &home,
 };
 
+/// Moar user files
 const Dir usr = {
 	.base = {
 		.type = t_DIR,
-		.name = "usr",
+		.name = {"usr", 3},
         .sibling = (File*) &home
 	},
     .content = (File*) &usr_share
 };
 
+/// Filesystem root
 Dir root = {
 	.base = {
 		.type = t_DIR,
-		.name = "/",
+		.name = {"/", 1},
 		.sibling = NULL
 	},
     .content = (File*) &usr
 };
 
+/**
+ * The current working directory
+ */
 volatile Dir* cwd = &root;
 
-File* fopen(const String* const name) {
-    if (name->size == 0) {
+/**
+ * Fetch a file by the path given
+ *
+ * @param name  a non-null string of a file name
+ *              returns `NULL` if empty
+ *
+ * @return the file in question,
+ *         or `NULL` if not found
+ *
+ */
+
+File* fopen(String name) {
+	usize_t i;
+	File* current;
+    String pathname;
+
+    if (name.size == 0) {
 		return NULL;
 	}
-	File* current;
-	usize_t i;
-    String pathname;
-    if (name->str[0] == '/') {
+
+    if (name.str[0] == '/') {
         current = (File*) &root;
 		i = 1;
 	}
 	else {
-        if (name->str[0] == '.') { // "./"
+        current = (File*) cwd;
+        if (name.str[0] == '.' && name.str[1] == '/') { // "./"
 			i = 2;
 		}
 		else {
 			i = 0;
 		}
-        current = (File*) cwd;
 	}
-    for (; i < name->size; i += pathname.size + 1) {
-        pathname.str = name->str + i;
-        pathname.size = nexttoklen(pathname.str, '/', name->size);
 
-        current = fopenLoc(&pathname, (Dir*) current);
+    name.str += i;
+    name.size -= i;
 
-		if (current == NULL) {
-			break;
-		}
-
+    while(name.size != 0 && current != NULL) {
+        tokenize(&name, '/', &pathname);
+        current = fopenlocal(&pathname, (Dir*) current);
 	}
+
 	return current;
 }
 
-File* fopenLoc(const String* const name, const Dir* const dir) {
+/**
+ * Fetch a file in the specified directory
+ *
+ * @param name  a non-null string of a file name
+ *              returns `NULL` if empty
+ * @param dir   where the file can be found
+ *              returns `NULL` if NULL or non-dir
+ *
+ * @return the file in question,
+ *         or `NULL` if not found
+ *
+ */
+
+File* fopenlocal(const String* name, const Dir* dir) {
+	File* current;
+
 	if (dir == NULL || dir->base.type != t_DIR) {
 		return NULL;
 	}
 
-	File* current;
 	for (current = dir->content; current != NULL; current = current->sibling) {
-        if(streq(current->name, name)) {
+        if(streq(&(current->name), name)) {
             if(current->type == t_LINK) {
                 current = ((Link*) current)->content;
             }

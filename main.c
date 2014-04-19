@@ -1,9 +1,12 @@
-#include "msp430.h"
+#ifndef PC
+	#include "msp430.h"
+#endif
 #include "std.h"
 #include "fs.h"
 
-
 void main(void) {
+
+#ifndef PC
 	WDTCTL = WDTPW + WDTHOLD; // Stop WDT
 
 	P1DIR |= BIT0 + BIT6; // Set the LEDs on P1.0, P1.6 as outputs
@@ -19,6 +22,7 @@ void main(void) {
 	UCA0CTL1 &= ~UCSWRST; // Initialize USCI state machine
 	IE2 |= UCA0RXIE; // Enable USCI_A0 RX interrupt
 
-	String sh = newString("/bin/sh", 7);
-	((Exec*) fopen(&sh))->content(NULL);
+#endif
+
+	((Exec*) fopen((String)newstr("/bin/sh", 7)))->content(NULL);
 }

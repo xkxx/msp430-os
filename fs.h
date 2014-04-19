@@ -10,6 +10,7 @@
 
 #include "std.h"
 
+// File types
 enum file_t {
 	t_DIR = 1,
 	t_TEXT = 3,
@@ -17,13 +18,15 @@ enum file_t {
 	t_LINK = 5
 };
 
-typedef enum file_t file_t;
+typedef enum file_t File_t;
+
+// File Structure definitions
 
 struct File;
 
 typedef struct File {
-	file_t type;
-	char* name;
+	File_t type;
+	String name;
 	struct File* sibling;
 } File;
 
@@ -39,7 +42,7 @@ typedef struct Text {
 
 typedef struct Exec {
 	File base;
-    usize_t (*content) (const String* const args);
+    usize_t (*content) (const String* args);
 } Exec;
 
 typedef struct Link {
@@ -47,9 +50,12 @@ typedef struct Link {
 	File* content;
 } Link;
 
-File* fopen(const String* const name);
-File* fopenLoc(const String* const name, const Dir* const dir);
+// FS-related functions
 
+File* fopen(String name);
+File* fopenlocal(const String* name, const Dir*  dir);
+
+// Static variables
 extern Dir root;
 
 extern volatile Dir* cwd;
