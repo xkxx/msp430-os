@@ -13,9 +13,9 @@
 // File types
 enum file_t {
 	t_DIR = 1,
-	t_TEXT = 3,
+	t_TEXT = 2,
 	t_EXEC = 4,
-	t_LINK = 5
+	t_LINK = 8
 };
 
 typedef enum file_t File_t;
@@ -30,19 +30,24 @@ typedef struct File {
 	struct File* sibling;
 } File;
 
+typedef struct GenericFile {
+	File base;
+	void* content;
+} GenericFile;
+
 typedef struct Dir {
 	File base;
-	struct File* content;
+	File* content;
 } Dir;
 
 typedef struct Text {
 	File base;
-	char* content;
+	String* content;
 } Text;
 
 typedef struct Exec {
 	File base;
-    usize_t (*content) (const String* args);
+    usize_t (*content) (String* args);
 } Exec;
 
 typedef struct Link {
@@ -54,6 +59,8 @@ typedef struct Link {
 
 File* fopen(String name);
 File* fopenlocal(const String* name, const Dir*  dir);
+
+#define parsePath(path, file) tokenize_right(path, '/', file);
 
 // Static variables
 extern Dir root;

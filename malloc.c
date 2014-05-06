@@ -17,6 +17,10 @@
 
 void* malloc(usize_t size) {
 	HeapMeta* meta;
+	// aligning memory
+	// http://stackoverflow.com/questions/1766535/bit-hack-round-off-to-multiple-of-8
+	size = (size + (MEMORY_ALIGN - 1)) & ~(MEMORY_ALIGN - 1);
+
 	if (size + sizeof(HeapMeta) <= HEAP_SIZE - heap_index) {
 		meta = (HeapMeta*) (heap + heap_index);
 		meta->isUsed = 1;
@@ -51,7 +55,9 @@ void* malloc(usize_t size) {
 void free(void* ptr) {
 	HeapMeta* meta = (HeapMeta*)ptr - sizeof(HeapMeta);
 	meta->isUsed = 0;
+	// merge into free heap if it's the last block
 	if ((char*) ptr + meta->size == heap + heap_index) {
 		heap_index -= meta->size + sizeof(HeapMeta);
 	}
+	// TODO: check if neighbor blocks are free
 }

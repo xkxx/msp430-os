@@ -6,7 +6,8 @@
 // Base ROOTFS definition
 
 /// Executables
-const Dir bin = {
+
+Dir bin = {
 	.base = {
 		.type = t_DIR,
 		.name = {"bin", 3},
@@ -15,17 +16,17 @@ const Dir bin = {
 	.content = LAST_COMMAND,
 };
 
-const Text hello = {
+Text hello = {
 	.base = {
 		.type = t_TEXT,
 		.name = {"hello", 5},
 		.sibling = NULL
 	},
-	.content = "Hello World!",
+	.content = &newstr("Hello World!", 12),
 };
 
 /// User personal files
-const Dir home = {
+Dir home = {
 	.base = {
 		.type = t_DIR,
 		.name = {"home", 4},
@@ -35,7 +36,7 @@ const Dir home = {
 };
 
 /// Moar Executables
-const Link usr_bin = {
+Link usr_bin = {
 	.base = {
 		.type = t_LINK,
 		.name = {"bin", 3},
@@ -45,7 +46,7 @@ const Link usr_bin = {
 };
 
 /// Moar user files
-const Link usr_share = {
+Link usr_share = {
 	.base = {
 		.type = t_LINK,
 		.name = {"share", 5},
@@ -55,7 +56,7 @@ const Link usr_share = {
 };
 
 /// Moar user files
-const Dir usr = {
+Dir usr = {
 	.base = {
 		.type = t_DIR,
 		.name = {"usr", 3},
@@ -112,6 +113,9 @@ File* fopen(String name) {
 			i = 0;
 		}
 	}
+    if (name.str[name.size-1] == '/') { // valid but not helpful
+    	name.size -= 1;
+    }
 
     name.str += i;
     name.size -= i;

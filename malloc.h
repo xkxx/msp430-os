@@ -10,7 +10,9 @@
 
 /// Size of the static memory heap
 #define HEAP_SIZE 150
-
+/// Minimum memory allocation size (platform dependent)
+// FIXME: this is platform dependent!!
+#define MEMORY_ALIGN 2
 /// Internal structure of a heap block
 typedef struct HeapMeta {
 	char isUsed;

@@ -22,7 +22,7 @@ unsigned char flags = 0;
  */
 
 void tokenize(String* str, char delimiter, String* result) {
-    usize_t i = 0;
+    usize_t i;
 
     // `result` always begins at start of `str`
     result->str = str->str;
@@ -67,6 +67,29 @@ usize_t streq(const String* s1, const String* s2) {
 	return 1;
 }
 
+void tokenize_right(String* str, char delimiter, String* result) {
+    int i; // unsigned int rotates
+
+    for (i = str->size - 1; i >= 0; i--) {
+        if(str->str[i] == delimiter) {
+            // set `result` to begin after the delimiter
+            // we don't care if it's out of bound since
+            // .size == 0 in that case
+            result->size = str->size - i - 1;
+            result->str = str->str + i + 1;
+            // set input `str` to end before delimiter
+            str->size = i;
+            return;
+        }
+    }
+
+    // default case
+    // if no delimiter is found, `result` == `str` and `str` == ""
+    result->str = str->str;
+    result->size = str->size;
+    str->size = 0;
+}
+
 // Standard IO
 
 #ifndef PC
@@ -105,13 +128,20 @@ __interrupt void USCI0RX_ISR(void) {
 
 #endif
 
-void putraw(const char *str, usize_t len) {
+void putraw(char const *str, usize_t len) {
 
 	while(len--) { // Loop until StringLength == 0 and post decrement
 		while(!(IFG2 & UCA0TXIFG)); // Wait for TX buffer to be ready for new data
 			UCA0TXBUF = *str; //Write the character at the location specified by the pointer
 			str++; //Increment the TxString pointer to point to the next character
 	}
+}
+
+void printline(String* const str) {
+	if (str != NULL) {
+		putraw(str->str, str->size);
+	}
+	putraw("\r\n", 2);
 }
 
 void get(String* in) {
@@ -167,21 +197,22 @@ __interrupt void Timer_A (void) {
 // Debug
 
 void printNum(int x) {
-	static const char * const nums = "0123456789";
-	while (x >= 10) {
-		int y = x % 10;
-		putraw(nums + y, 1);
-		x /= 10;
+	static const char zero = '0';
+	char temp[6]; // int goes to 65536
+	signed char index = 0;
+	if (x < 0) {
+		temp[index] = '-';
+		index++;
+		x = -x;
 	}
-	putraw(nums + x, 1);
-}
-
-void printCharCode(char x) {
-	static const char * const nums = "0123456789";
 	while (x >= 10) {
-		char y = x % 10;
-		putraw(nums + y, 1);
+		temp[index] = zero + x % 10;
 		x /= 10;
+		index++;
 	}
-	putraw(nums + x, 1);
+	temp[index] = zero + x;
+	for (; index >= 0; index--) {
+		putraw(temp + index, 1);
+	}
+	printline(NULL);
 }

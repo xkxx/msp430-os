@@ -55,11 +55,12 @@ typedef struct String {
 } String;
 
 /// create a new string
-#define newstr(str, size) {str, size}
+#define newstr(str, size) (String){str, size}
 
 // String functions
 
 void tokenize(String* str, char delimiter, String* result);
+void tokenize_right(String* str, char delimiter, String* result);
 usize_t streq(const String* s1, const String* s2);
 
 // Standard IO
@@ -72,9 +73,13 @@ static volatile usize_t uart_index = 0;
 // Output functions
 
 // For internal use only
-void putraw(const char *str, usize_t len);
+void putraw(char const *str, usize_t len);
 
 #define put(string) putraw((string).str, (string).size)
+
+void printline(String* const str);
+
+#define println(string) printline(&(string));
 
 // Input functions
 void get(String* in);

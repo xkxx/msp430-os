@@ -15,9 +15,13 @@ Thus comes Duckus: it's not an operating system, nor does it try to be. But it _
 * yes
 * uname
 * pwd
+* echo
 * cd
+* cat
+* ln
 * ls
 * mkdir
+* dc
 * sh
 * _more to come..._
 
