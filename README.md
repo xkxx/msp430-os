@@ -3,7 +3,7 @@ Duckus: an operating system for the least powerful of machines
 
 Duckus walks like an operating system, quarks like an operating system, but you'd be a fool to think it is one. Which is its sole purpose: to support as many Unix console commands as we can cram into its stomach so that it appears like an operating system to those unaware.
 
-It is created as an experiment to discover the extent as to how much bloat one can feed to the least performant hardware one can buy [Citation Neede] that is the TI MSP430 Launchpad.
+It is created as an experiment to discover the extent as to how much bloat one can feed to the least performant hardware money can buy [Citation Needed] that is the TI MSP430 Launchpad.
 
 Duckus IS NOT AN OS
 ---------------------
